@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
+
 from app.models.memes import Memes
-from typing import List, Optional
+
 
 class MemesRepository:
     def __init__(self, db: Session):
@@ -18,13 +19,13 @@ class MemesRepository:
         self.db.refresh(meme)
         return meme
 
-    def get_all(self) -> List[Memes]:
+    def get_all(self) -> list[Memes]:
         return self.db.query(Memes).all()
 
-    def get_by_id(self, meme_id: int) -> Optional[Memes]:
+    def get_by_id(self, meme_id: int) -> Memes | None:
         return self.db.query(Memes).filter(Memes.id == meme_id).first()
 
-    def get_by_tag_id(self, tag_id: int) -> List[Memes]:
+    def get_by_tag_id(self, tag_id: int) -> list[Memes]:
         return self.db.query(Memes).filter(Memes.tag_id == tag_id).all()
 
     def delete(self, meme: Memes) -> None:

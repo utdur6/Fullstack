@@ -1,7 +1,9 @@
+from __future__ import annotations
+
 from enum import Enum
 
-from sqlalchemy import Boolean, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Boolean, String, Table, Column, Integer, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 
@@ -9,6 +11,15 @@ from app.database import Base
 class UserRole(str, Enum):
     USER = "user"
     ADMIN = "admin"
+
+
+# Связующая таблица для many-to-many
+user_memes = Table(
+    "user_memes",
+    Base.metadata,
+    Column("user_id", ForeignKey("users.id"), primary_key=True),
+    Column("meme_id", ForeignKey("memes.id"), primary_key=True),
+)
 
 
 class User(Base):
@@ -28,3 +39,6 @@ class User(Base):
         default=UserRole.USER.value,
         nullable=False,
     )
+
+    # Связь многие-ко-многим с Memes через user_memes
+    memes = relationship("Memes", secondary=user_memes, back_populates="users")

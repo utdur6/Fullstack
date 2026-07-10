@@ -10,6 +10,7 @@ from app.database import Base, engine
 from app.handlers.auth import router as auth_router
 from app.handlers.memes import router as books_router
 from app.handlers.users import router as users_router
+from app.models.tags import Tag
 from app.models.memes import Memes
 from app.models.users import User
 

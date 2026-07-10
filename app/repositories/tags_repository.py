@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session
+
 from app.models.tags import Tag
-from typing import List, Optional
+
 
 class TagRepository:
     def __init__(self, db: Session):
@@ -18,13 +19,13 @@ class TagRepository:
         self.db.refresh(tag)
         return tag
 
-    def get_all(self) -> List[Tag]:
+    def get_all(self) -> list[Tag]:
         return self.db.query(Tag).all()
 
-    def get_by_id(self, tag_id: int) -> Optional[Tag]:
+    def get_by_id(self, tag_id: int) -> Tag | None:
         return self.db.query(Tag).filter(Tag.id == tag_id).first()
 
-    def get_by_name(self, name: str) -> Optional[Tag]:
+    def get_by_name(self, name: str) -> Tag | None:
         return self.db.query(Tag).filter(Tag.name == name).first()
 
     def delete(self, tag: Tag) -> None:
