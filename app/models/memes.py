@@ -14,7 +14,7 @@ class Memes(Base):
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     description: Mapped[str] = mapped_column(String, unique=True, nullable=False)
-    photo: Mapped[str] = mapped_column(String, nullable=False)
+    photo: Mapped[str] = mapped_column(String, nullable=True)
     tag_id: Mapped[int] = mapped_column(ForeignKey("tags.id"), nullable=True)
     created_at: Mapped[DateTime] = mapped_column(DateTime, server_default=func.now())
     updated_at: Mapped[DateTime] = mapped_column(DateTime, onupdate=func.now(), nullable=True)

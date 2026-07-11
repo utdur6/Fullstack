@@ -11,10 +11,11 @@ class MemesService:
     def __init__(self, db: Session):
         self.repository = MemesRepository(db)
 
-    def create_memes(self, schema: MemesCreate) -> Memes:
+    def create_memes(self, schema: MemesCreate, filename: str) -> Memes:
         mem = Memes(
             name=schema.name,
             description=schema.description,
+            photo = schema.image,
         )
 
         return self.repository.create(mem)
