@@ -183,3 +183,73 @@ def health_check():
 @app.get("/")
 def root():
     return {"message": "Meme API is running"}
+
+
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from typing import List, Dict, Any
+
+app = FastAPI()
+
+# Добавляем CORS для работы с фронтендом
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ========== ВРЕМЕННАЯ БАЗА ДАННЫХ ==========
+# Временные данные для тестирования
+memes_db = [
+    {
+        "id": 1,
+        "title": "Мем #1",
+        "description": "Первый мем",
+        "image_url": "https://via.placeholder.com/400x300/667eea/ffffff?text=Meme+1",
+        "votes": 15
+    },
+    {
+        "id": 2,
+        "title": "Мем #2",
+        "description": "Второй мем",
+        "image_url": "https://via.placeholder.com/400x300/764ba2/ffffff?text=Meme+2",
+        "votes": 10
+    },
+    {
+        "id": 3,
+        "title": "Мем #3",
+        "description": "Третий мем",
+        "image_url": "https://via.placeholder.com/400x300/f093fb/ffffff?text=Meme+3",
+        "votes": 8
+    }
+]
+
+# ========== ЭНДПОИНТЫ ==========
+
+@app.get("/memes")
+async def get_memes():
+    """Получить все мемы"""
+    return memes_db
+
+@app.get("/memes/{meme_id}")
+async def get_meme(meme_id: int):
+    """Получить мем по ID"""
+    for meme in memes_db:
+        if meme["id"] == meme_id:
+            return meme
+    raise HTTPException(status_code=404, detail="Мем не найден")
+
+@app.post("/memes/{meme_id}/vote")
+async def vote_meme(meme_id: int):
+    """Проголосовать за мем"""
+    for meme in memes_db:
+        if meme["id"] == meme_id:
+            meme["votes"] += 1
+            return {"message": f"Голос за мем '{meme['title']}' учтён!", "votes": meme["votes"]}
+    raise HTTPException(status_code=404, detail="Мем не найден")
+
+@app.get("/")
+async def root():
+    return {"message": "Meme Battle API is running!"}

@@ -15,9 +15,9 @@ def render_sidebar():
         if st.button("🖼️ Мемы", use_container_width=True):
             st.switch_page("pages/Mem.py")
         if st.button("🏷️ Теги", use_container_width=True):
-            st.switch_page("pages/Tags.py")
+            st.switch_page("pages/tags.py")
         if st.button("🏆 Топ", use_container_width=True):
-            st.switch_page("pages/Top.py")
+            st.switch_page("pages/top.py")
 
         st.divider()
 

@@ -1,19 +1,8 @@
-"""
-Страница тегов
-"""
+﻿import streamlit as st
 
-import streamlit as st
-
-st.set_page_config(
-    page_title="Теги | Meme Battle",
-    page_icon="🏷️",
-    layout="wide"
-)
-
+st.set_page_config(page_title="Теги", page_icon="🏷️", layout="wide")
 st.header("🏷️ Теги")
-st.info("Здесь будут отображаться все теги")
 
-# Заглушка с примерами
 tags = [
     {"name": "Смешные", "count": 15, "emoji": "😂"},
     {"name": "Животные", "count": 12, "emoji": "🐱"},
