@@ -2,27 +2,27 @@ import subprocess
 import sys
 import os
 import time
+import webbrowser  # ← ДОБАВЛЯЕМ
 
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 
 # Проверяем, где лежит Streamlit
-POSSIBLE_STREAMLIT_DIRS = [
+POSSIBLE_DIRS = [
     os.path.join(PROJECT_ROOT, "frontend", "streamlit"),
     os.path.join(PROJECT_ROOT, "frontend"),
     os.path.join(PROJECT_ROOT, "streamlit"),
 ]
 
 STREAMLIT_DIR = None
-for dir_path in POSSIBLE_STREAMLIT_DIRS:
+for dir_path in POSSIBLE_DIRS:
     if os.path.exists(dir_path) and os.path.isdir(dir_path):
-        # Проверяем, есть ли в папке app.py
         if os.path.exists(os.path.join(dir_path, "app.py")):
             STREAMLIT_DIR = dir_path
             break
 
 if STREAMLIT_DIR is None:
     print("❌ Не найдена папка с Streamlit-приложением!")
-    print("Искал в:", POSSIBLE_STREAMLIT_DIRS)
+    print("Искал в:", POSSIBLE_DIRS)
     sys.exit(1)
 
 print(f"✅ Найден Streamlit в: {STREAMLIT_DIR}")
@@ -75,6 +75,12 @@ if __name__ == "__main__":
     print(f"   🔹 Документация API: http://127.0.0.1:8000/docs")
     print(f"   🔹 Фронтенд: http://localhost:8501")
     print("=" * 50)
+
+    # ===== ОТКРЫВАЕМ БРАУЗЕР =====
+    print("\n🌐 Открываем фронтенд в браузере...")
+    time.sleep(2)
+    webbrowser.open("http://localhost:8501")
+
     print("\n📝 Нажмите Ctrl+C для остановки...")
 
     try:

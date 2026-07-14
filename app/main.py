@@ -1,15 +1,14 @@
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Optional
-from datetime import datetime
-
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
+from typing import Optional, List
+import sqlite3
+import bcrypt
+import jwt
+from datetime import datetime, timedelta
 
 app = FastAPI()
 
-# Добавьте CORS для работы с фронтендом
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -18,238 +17,288 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ========== ЭНДПОИНТ ДЛЯ МЕМОВ ==========
-@app.get("/memes")
-async def get_memes():
-    """Получить все мемы"""
-    # Временная заглушка
-    return [
-        {
-            "id": 1,
-            "title": "Мем #1",
-            "description": "Первый мем",
-            "image_url": "https://via.placeholder.com/400x300/667eea/ffffff?text=Meme+1",
-            "votes": 15
-        },
-        {
-            "id": 2,
-            "title": "Мем #2",
-            "description": "Второй мем",
-            "image_url": "https://via.placeholder.com/400x300/764ba2/ffffff?text=Meme+2",
-            "votes": 10
-        },
-        {
-            "id": 3,
-            "title": "Мем #3",
-            "description": "Третий мем",
-            "image_url": "https://via.placeholder.com/400x300/f093fb/ffffff?text=Meme+3",
-            "votes": 8
-        }
-    ]
+SECRET_KEY = "your-secret-key-here"
+ALGORITHM = "HS256"
 
-@app.post("/memes/{meme_id}/vote")
-async def vote_meme(meme_id: int):
-    """Проголосовать за мем"""
-    return {"message": f"Голос за мем {meme_id} учтён!"}
-# Настройка приложения
-app = FastAPI(
-    title="Meme API",
-    version="0.1.0",
-    debug=True,
-)
 
-# Настройка CORS (для доступа с фронтенда)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+# ========== БАЗА ДАННЫХ ==========
+def get_db():
+    conn = sqlite3.connect("memes.db")
+    conn.row_factory = sqlite3.Row
+    return conn
 
-# --- Pydantic схемы ---
-class MemeResponse(BaseModel):
-    id: int
-    name: str
-    description: str
-    photo: str
-    tag_id: Optional[int] = None
-    created_at: Optional[str] = None
+
+def init_db():
+    conn = get_db()
+    cursor = conn.cursor()
+
+    # Таблица пользователей
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE,
+            email TEXT UNIQUE,
+            hashed_password TEXT,
+            role TEXT DEFAULT 'user'
+        )
+    ''')
+
+    # Таблица тегов
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS tags (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE,
+            emoji TEXT
+        )
+    ''')
+
+    # Таблица мемов
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS memes (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT,
+            description TEXT,
+            image_url TEXT,
+            votes INTEGER DEFAULT 0,
+            tag_id INTEGER,
+            created_by INTEGER,
+            FOREIGN KEY (tag_id) REFERENCES tags(id),
+            FOREIGN KEY (created_by) REFERENCES users(id)
+        )
+    ''')
+
+    # Добавляем теги
+    cursor.execute("SELECT COUNT(*) FROM tags")
+    if cursor.fetchone()[0] == 0:
+        tags = [
+            ("Смешные", "😂"),
+            ("Животные", "🐱"),
+            ("Программирование", "💻"),
+            ("Мемы", "🤣"),
+            ("Фильмы", "🎬"),
+        ]
+        cursor.executemany("INSERT INTO tags (name, emoji) VALUES (?, ?)", tags)
+
+    # Добавляем тестового администратора
+    cursor.execute("SELECT COUNT(*) FROM users WHERE role = 'admin'")
+    if cursor.fetchone()[0] == 0:
+        hashed = bcrypt.hashpw("admin123".encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        cursor.execute(
+            "INSERT INTO users (username, email, hashed_password, role) VALUES (?, ?, ?, ?)",
+            ("admin", "admin@example.com", hashed, "admin")
+        )
+
+    # Добавляем тестовые мемы
+    cursor.execute("SELECT COUNT(*) FROM memes")
+    if cursor.fetchone()[0] == 0:
+        test_memes = [
+            ("Кот-программист", "Кот смотрит в код", "https://via.placeholder.com/400x300/667eea/ffffff?text=Кот", 1,
+             1),
+            ("Собака-баг", "Собака ищет баги", "https://via.placeholder.com/400x300/764ba2/ffffff?text=Собака", 2, 1),
+            ("Хаски-разработчик", "Хаски пишет код", "https://via.placeholder.com/400x300/f093fb/ffffff?text=Хаски", 3,
+             1),
+            ("Мем-день", "Смешной мем", "https://via.placeholder.com/400x300/4CAF50/ffffff?text=Мем", 4, 1),
+        ]
+        cursor.executemany(
+            "INSERT INTO memes (title, description, image_url, tag_id, created_by) VALUES (?, ?, ?, ?, ?)",
+            test_memes
+        )
+
+    conn.commit()
+    conn.close()
+
+
+init_db()
+
+
+# ========== СХЕМЫ ==========
+class UserRegister(BaseModel):
+    username: str
+    email: str
+    password: str
+
+
+class UserLogin(BaseModel):
+    email: str
+    password: str
+
 
 class MemeCreate(BaseModel):
-    name: str
-    description: str
-    photo: str
-    tag_id: Optional[int] = None
+    title: str
+    description: Optional[str] = None
+    image_url: str
+    tag_id: int = 1
+
 
 class TagResponse(BaseModel):
     id: int
     name: str
-
-# --- Временное хранилище данных (вместо БД) ---
-memes_db = [
-    {
-        "id": 1,
-        "name": "Первый мем",
-        "description": "Описание первого мема",
-        "photo": "https://via.placeholder.com/300x200",
-        "tag_id": 1,
-        "created_at": "2026-07-12T10:00:00"
-    },
-    {
-        "id": 2,
-        "name": "Второй мем",
-        "description": "Описание второго мема",
-        "photo": "https://via.placeholder.com/300x200",
-        "tag_id": 2,
-        "created_at": "2026-07-11T10:00:00"
-    },
-    {
-        "id": 3,
-        "name": "Третий мем",
-        "description": "Описание третьего мема",
-        "photo": "https://via.placeholder.com/300x200",
-        "tag_id": 1,
-        "created_at": "2026-07-10T10:00:00"
-    }
-]
-
-tags_db = [
-    {"id": 1, "name": "Funny"},
-    {"id": 2, "name": "Cute"},
-    {"id": 3, "name": "Meme"},
-]
-
-next_meme_id = 4
-next_tag_id = 4
-
-# --- API для мемов ---
-@app.get("/api/memes", response_model=List[MemeResponse])
-def get_all_memes():
-    """Получить все мемы"""
-    return memes_db
-
-@app.get("/api/memes/{meme_id}", response_model=MemeResponse)
-def get_meme_by_id(meme_id: int):
-    """Получить мем по ID"""
-    for meme in memes_db:
-        if meme["id"] == meme_id:
-            return meme
-    raise HTTPException(status_code=404, detail="Meme not found")
-
-@app.post("/api/memes", response_model=MemeResponse)
-def create_meme(meme_data: MemeCreate):
-    """Создать новый мем"""
-    global next_meme_id
-    new_meme = {
-        "id": next_meme_id,
-        "name": meme_data.name,
-        "description": meme_data.description,
-        "photo": meme_data.photo,
-        "tag_id": meme_data.tag_id,
-        "created_at": datetime.now().isoformat()
-    }
-    memes_db.append(new_meme)
-    next_meme_id += 1
-    return new_meme
-
-@app.delete("/api/memes/{meme_id}")
-def delete_meme(meme_id: int):
-    """Удалить мем"""
-    global memes_db
-    memes_db = [m for m in memes_db if m["id"] != meme_id]
-    return {"message": "Meme deleted"}
-
-# --- API для тегов ---
-@app.get("/api/tags", response_model=List[TagResponse])
-def get_all_tags():
-    """Получить все теги"""
-    return tags_db
-
-@app.post("/api/tags")
-def create_tag(name: str):
-    """Создать новый тег"""
-    global next_tag_id
-    new_tag = {"id": next_tag_id, "name": name}
-    tags_db.append(new_tag)
-    next_tag_id += 1
-    return new_tag
-
-# --- Health check ---
-@app.get("/health")
-def health_check():
-    return {"status": "ok", "app_name": "Meme API"}
-
-@app.get("/")
-def root():
-    return {"message": "Meme API is running"}
+    emoji: str
 
 
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from typing import List, Dict, Any
+# ========== ФУНКЦИИ ==========
+def hash_password(password: str) -> str:
+    salt = bcrypt.gensalt()
+    return bcrypt.hashpw(password.encode('utf-8'), salt).decode('utf-8')
 
-app = FastAPI()
 
-# Добавляем CORS для работы с фронтендом
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+def verify_password(plain: str, hashed: str) -> bool:
+    return bcrypt.checkpw(plain.encode('utf-8'), hashed.encode('utf-8'))
 
-# ========== ВРЕМЕННАЯ БАЗА ДАННЫХ ==========
-# Временные данные для тестирования
-memes_db = [
-    {
-        "id": 1,
-        "title": "Мем #1",
-        "description": "Первый мем",
-        "image_url": "https://via.placeholder.com/400x300/667eea/ffffff?text=Meme+1",
-        "votes": 15
-    },
-    {
-        "id": 2,
-        "title": "Мем #2",
-        "description": "Второй мем",
-        "image_url": "https://via.placeholder.com/400x300/764ba2/ffffff?text=Meme+2",
-        "votes": 10
-    },
-    {
-        "id": 3,
-        "title": "Мем #3",
-        "description": "Третий мем",
-        "image_url": "https://via.placeholder.com/400x300/f093fb/ffffff?text=Meme+3",
-        "votes": 8
-    }
-]
+
+def create_token(data: dict) -> str:
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=30)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
 
 # ========== ЭНДПОИНТЫ ==========
 
-@app.get("/memes")
-async def get_memes():
-    """Получить все мемы"""
-    return memes_db
+@app.get("/")
+def root():
+    return {"message": "Meme Battle API"}
 
-@app.get("/memes/{meme_id}")
-async def get_meme(meme_id: int):
-    """Получить мем по ID"""
-    for meme in memes_db:
-        if meme["id"] == meme_id:
-            return meme
-    raise HTTPException(status_code=404, detail="Мем не найден")
+
+# ---- АВТОРИЗАЦИЯ ----
+@app.post("/auth/register")
+def register(user: UserRegister):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT id FROM users WHERE email = ? OR username = ?", (user.email, user.username))
+    if cursor.fetchone():
+        conn.close()
+        raise HTTPException(400, "Пользователь уже существует")
+
+    hashed = hash_password(user.password)
+    cursor.execute(
+        "INSERT INTO users (username, email, hashed_password, role) VALUES (?, ?, ?, ?)",
+        (user.username, user.email, hashed, "user")
+    )
+    conn.commit()
+    user_id = cursor.lastrowid
+    conn.close()
+
+    return {"id": user_id, "username": user.username, "email": user.email, "role": "user"}
+
+
+@app.post("/auth/login")
+def login(user: UserLogin):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    cursor.execute("SELECT * FROM users WHERE email = ?", (user.email,))
+    db_user = cursor.fetchone()
+    conn.close()
+
+    if not db_user or not verify_password(user.password, db_user["hashed_password"]):
+        raise HTTPException(401, "Неверный email или пароль")
+
+    token = create_token({"sub": db_user["email"], "user_id": db_user["id"], "role": db_user["role"]})
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {
+            "id": db_user["id"],
+            "username": db_user["username"],
+            "email": db_user["email"],
+            "role": db_user["role"]
+        }
+    }
+
+
+@app.get("/users/me")
+def get_current_user():
+    # Простая заглушка — возвращаем первого пользователя
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users LIMIT 1")
+    user = cursor.fetchone()
+    conn.close()
+
+    if not user:
+        raise HTTPException(404, "Пользователь не найден")
+
+    return {
+        "id": user["id"],
+        "username": user["username"],
+        "email": user["email"],
+        "role": user["role"]
+    }
+
+
+# ---- ТЕГИ ----
+@app.get("/tags")
+def get_tags():
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM tags")
+    tags = cursor.fetchall()
+    conn.close()
+
+    return [{"id": t["id"], "name": t["name"], "emoji": t["emoji"]} for t in tags]
+
+
+# ---- МЕМЫ ----
+@app.get("/memes")
+def get_memes(tag_id: Optional[int] = None):
+    conn = get_db()
+    cursor = conn.cursor()
+
+    if tag_id:
+        cursor.execute("SELECT * FROM memes WHERE tag_id = ?", (tag_id,))
+    else:
+        cursor.execute("SELECT * FROM memes")
+
+    memes = cursor.fetchall()
+    conn.close()
+
+    return [{"id": m["id"], "title": m["title"], "description": m["description"],
+             "image_url": m["image_url"], "votes": m["votes"], "tag_id": m["tag_id"]} for m in memes]
+
+
+@app.post("/memes")
+def create_meme(meme: MemeCreate):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO memes (title, description, image_url, tag_id) VALUES (?, ?, ?, ?)",
+        (meme.title, meme.description, meme.image_url, meme.tag_id)
+    )
+    conn.commit()
+    meme_id = cursor.lastrowid
+    conn.close()
+
+    return {"id": meme_id, "title": meme.title, "description": meme.description,
+            "image_url": meme.image_url, "votes": 0, "tag_id": meme.tag_id}
+
 
 @app.post("/memes/{meme_id}/vote")
-async def vote_meme(meme_id: int):
-    """Проголосовать за мем"""
-    for meme in memes_db:
-        if meme["id"] == meme_id:
-            meme["votes"] += 1
-            return {"message": f"Голос за мем '{meme['title']}' учтён!", "votes": meme["votes"]}
-    raise HTTPException(status_code=404, detail="Мем не найден")
+def vote_meme(meme_id: int):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("UPDATE memes SET votes = votes + 1 WHERE id = ?", (meme_id,))
+    if cursor.rowcount == 0:
+        conn.close()
+        raise HTTPException(404, "Мем не найден")
+    conn.commit()
 
-@app.get("/")
-async def root():
-    return {"message": "Meme Battle API is running!"}
+    cursor.execute("SELECT votes FROM memes WHERE id = ?", (meme_id,))
+    votes = cursor.fetchone()
+    conn.close()
+
+    return {"id": meme_id, "votes": votes["votes"]}
+
+
+@app.delete("/memes/{meme_id}")
+def delete_meme(meme_id: int):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM memes WHERE id = ?", (meme_id,))
+    if cursor.rowcount == 0:
+        conn.close()
+        raise HTTPException(404, "Мем не найден")
+    conn.commit()
+    conn.close()
+    return {"message": "Мем удален"}

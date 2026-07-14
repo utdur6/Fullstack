@@ -9,234 +9,178 @@ st.set_page_config(
     initial_sidebar_state="collapsed"
 )
 
-# ========== ПОЛНОСТЬЮ СКРЫВАЕМ СИСТЕМНОЕ МЕНЮ ==========
+# ========== СКРЫВАЕМ СИСТЕМНЫЙ САЙДБАР ==========
 st.markdown("""
     <style>
-    /* Скрываем всё системное меню */
     #MainMenu {visibility: hidden !important;}
     footer {visibility: hidden !important;}
     header {visibility: hidden !important;}
-
-    /* Скрываем системный сайдбар */
     .css-1d391kg {display: none !important;}
     .css-1r6slb0 {display: none !important;}
     .st-emotion-cache-1r6slb0 {display: none !important;}
     .st-emotion-cache-1d391kg {display: none !important;}
-
-    /* Скрываем верхнюю панель */
-    .st-emotion-cache-6qob1r {display: none !important;}
-    .st-emotion-cache-1v0mbdj {display: none !important;}
-
-    /* Скрываем кнопки */
-    button[data-testid="baseButton-header"] {display: none !important;}
-    button[kind="header"] {display: none !important;}
-    .st-emotion-cache-1wivap2 {display: none !important;}
-
-    /* Скрываем навигацию, которую создает st.navigation */
-    .st-emotion-cache-1v0mbdj {display: none !important;}
-    .st-emotion-cache-1r6slb0 {display: none !important;}
+    [data-testid="stSidebar"] {display: none !important;}
     [data-testid="stSidebarNav"] {display: none !important;}
+    section[data-testid="stSidebar"] {display: none !important;}
 
-    /* Убираем отступы */
     .main > div {
         padding-top: 0rem !important;
         padding-left: 1rem !important;
         padding-right: 1rem !important;
     }
+    .block-container {
+        padding-top: 0rem !important;
+    }
 
-    /* Стили для кастомной навигации */
-    .nav-container {
+    .custom-nav {
         background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-        padding: 1rem 2rem;
-        border-radius: 15px;
-        margin-bottom: 2rem;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-wrap: wrap;
-        gap: 10px;
-        border: 1px solid rgba(255,255,255,0.1);
+        padding: 12px 20px;
+        border-radius: 16px;
+        margin-bottom: 24px;
+        border: 1px solid rgba(255,255,255,0.08);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     }
-    .nav-container .logo {
+    .custom-nav .brand {
         color: #e94560;
-        font-size: 1.8rem;
-        font-weight: bold;
-        text-decoration: none;
+        font-size: 22px;
+        font-weight: 700;
         display: flex;
         align-items: center;
-        gap: 10px;
-        cursor: pointer;
-        background: none;
-        border: none;
-    }
-    .nav-container .logo:hover {
-        transform: scale(1.05);
-        transition: 0.3s;
-    }
-    .nav-container .nav-menu {
-        display: flex;
         gap: 8px;
+    }
+    .custom-nav .nav-links {
+        display: flex;
+        gap: 6px;
         align-items: center;
         flex-wrap: wrap;
+        margin-top: 8px;
     }
-    .nav-container .nav-item {
-        color: rgba(255,255,255,0.7);
-        text-decoration: none;
-        padding: 8px 16px;
-        border-radius: 25px;
-        transition: all 0.3s;
-        font-size: 0.95rem;
-        cursor: pointer;
-        background: rgba(255,255,255,0.05);
-        border: 1px solid transparent;
-    }
-    .nav-container .nav-item:hover {
-        background: rgba(233, 69, 96, 0.2);
-        color: #e94560;
-        border-color: #e94560;
-        transform: translateY(-2px);
-    }
-    .nav-container .nav-item.active {
-        background: #e94560;
-        color: white;
-        font-weight: bold;
-        box-shadow: 0 4px 15px rgba(233, 69, 96, 0.3);
-    }
-    .nav-container .user-info {
+    .custom-nav .user-badge {
         color: rgba(255,255,255,0.8);
-        display: flex;
-        align-items: center;
-        gap: 10px;
         background: rgba(255,255,255,0.08);
-        padding: 8px 16px;
+        padding: 6px 16px;
         border-radius: 25px;
-        font-size: 0.9rem;
+        font-size: 14px;
         border: 1px solid rgba(255,255,255,0.05);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 8px;
     }
-    @media (max-width: 768px) {
-        .nav-container {
-            flex-direction: column;
-            align-items: stretch;
-            padding: 1rem;
+    @media (min-width: 768px) {
+        .custom-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        .nav-container .nav-menu {
-            justify-content: center;
+        .custom-nav .nav-links {
+            margin-top: 0;
         }
-        .nav-container .nav-item {
-            font-size: 0.85rem;
-            padding: 6px 12px;
+        .custom-nav .user-badge {
+            margin-top: 0;
         }
     }
     </style>
 """, unsafe_allow_html=True)
 
+# ========== НАВИГАЦИЯ ==========
 
-# ========== КАСТОМНАЯ НАВИГАЦИЯ ==========
-def render_navigation():
-    """Рендерит кастомную навигацию сверху"""
+# Определяем текущую страницу
+current_page = st.session_state.get('page', 'catalog')
 
-    # Получаем текущую страницу из URL
-    current = st.query_params.get('page', 'catalog')
-
-    # Информация о пользователе
-    user_name = "Гость"
-    if is_authenticated():
-        profile = current_profile()
-        if profile:
-            user_name = profile.get('username', 'Гость')
-
-    # Создаем кнопки навигации
-    nav_items = [
-        {"id": "catalog", "label": "⚔️ Битва"},
-        {"id": "all-memes", "label": "🖼️ Мемы"},
-        {"id": "tags", "label": "🏷️ Теги"},
-        {"id": "top", "label": "🏆 Топ"},
-    ]
-
-    if is_authenticated():
-        nav_items.append({"id": "profile", "label": "👤 Профиль"})
-        nav_items.append({"id": "favorites", "label": "⭐ Избранное"})
-    else:
-        nav_items.append({"id": "login", "label": "🔑 Вход"})
-
-    if is_admin():
-        nav_items.append({"id": "create-meme", "label": "➕ Добавить"})
-
-    # Создаем HTML для навигации
-    nav_html = '<div class="nav-container"><div class="logo" onclick="window.location.href=\'/?page=catalog\'">⚔️ Meme Battle</div><div class="nav-menu">'
-
-    for item in nav_items:
-        active_class = 'active' if current == item['id'] else ''
-        nav_html += f'<button class="nav-item {active_class}" onclick="window.location.href=\'/?page={item["id"]}\'">{item["label"]}</button>'
-
-    nav_html += f'<div class="user-info">👤 {user_name}</div>'
-    nav_html += '</div></div>'
-
-    st.markdown(nav_html, unsafe_allow_html=True)
+# Список пунктов меню
+menu_items = [
+    {"id": "catalog", "label": "⚔️ Битва"},
+    {"id": "all-memes", "label": "🖼️ Мемы"},
+    {"id": "tags", "label": "🏷️ Теги"},
+    {"id": "top", "label": "🏆 Топ"},
 
 
-# ========== ОСНОВНАЯ ЛОГИКА ==========
 
-# Рендерим кастомную навигацию
-render_navigation()
+]
 
-# Получаем текущую страницу из URL (по умолчанию catalog)
-page = st.query_params.get('page', 'catalog')
-
-# Отображаем нужную страницу
-if page == 'catalog':
-    # Импортируем и запускаем catalog.py
-    from pages import catalog
-
-    catalog.show()
-
-elif page == 'all-memes':
-    from pages import all_memes
-
-    all_memes.show()
-
-elif page == 'tags':
-    from pages import tags
-
-    tags.show()
-
-elif page == 'top':
-    from pages import top
-
-    top.show()
-
-elif page == 'profile':
-    from pages import profile
-
-    profile.show()
-
-elif page == 'favorites':
-    from pages import favorites
-
-    favorites.show()
-
-elif page == 'login':
-    from pages import login
-
-    login.show()
-
-elif page == 'registration':
-    from pages import registration
-
-    registration.show()
-
-elif page == 'create-meme':
-    from pages import create_meme
-
-    create_meme.show()
-
-elif page == 'edit-meme':
-    from pages import edit_meme
-
-    edit_meme.show()
-
+if is_authenticated():
+    menu_items.append({"id": "profile", "label": "👤 Профиль"})
+    menu_items.append({"id": "favorites", "label": "⭐ Избранное"})
 else:
-    # Если страница не найдена - перенаправляем на catalog
-    st.query_params.page = 'catalog'
+
+    menu_items.append({"id": "login", "label": "🔑 Вход"})
+    menu_items.append({"id": "registration", "label": "📝 Регистрация"})
+
+if is_admin():
+    menu_items.append({"id": "create-meme", "label": "➕ Добавить"})
+
+# Информация о пользователе
+user_name = "Гость"
+if is_authenticated():
+    profile = current_profile()
+    if profile:
+        user_name = profile.get('username', 'Гость')
+
+# Рендерим навигацию
+st.markdown('<div class="custom-nav">', unsafe_allow_html=True)
+st.markdown(f'<div class="brand">⚔️ Meme Battle</div>', unsafe_allow_html=True)
+
+# Кнопки навигации в ряд
+cols = st.columns(len(menu_items) + 1)
+for i, item in enumerate(menu_items):
+    with cols[i]:
+        button_type = "primary" if current_page == item['id'] else "secondary"
+        if st.button(item["label"], key=f"nav_{item['id']}", type=button_type, use_container_width=True):
+            st.session_state.page = item['id']
+            st.rerun()
+
+with cols[-1]:
+    st.markdown(
+        f'<div style="color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.08); padding: 6px 16px; border-radius: 25px; font-size: 14px; text-align: center; border: 1px solid rgba(255,255,255,0.05);">👤 {user_name}</div>',
+        unsafe_allow_html=True)
+
+st.markdown('</div>', unsafe_allow_html=True)
+
+# ========== ОТОБРАЖЕНИЕ СТРАНИЦ ==========
+
+page = st.session_state.get('page', 'catalog')
+
+if page == 'catalog':
+    from pages.catalog import show
+
+    show()
+elif page == 'all-memes':
+    from pages.all_memes import show
+
+    show()
+elif page == 'tags':
+    from pages.tags import show
+
+    show()
+elif page == 'top':
+    from pages.top import show
+
+    show()
+elif page == 'profile':
+    from pages.profile import show
+
+    show()
+elif page == 'favorites':
+    from pages.favorites import show
+
+    show()
+elif page == 'login':
+    from pages.login import show
+
+    show()
+elif page == 'registration':
+    from pages.registration import show
+
+    show()
+elif page == 'create-meme':
+    from pages.create_meme import show
+
+    show()
+elif page == 'edit-meme':
+    from pages.edit_meme import show
+
+    show()
+else:
+    st.session_state.page = 'catalog'
     st.rerun()
