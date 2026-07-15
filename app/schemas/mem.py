@@ -1,13 +1,9 @@
-from typing import Annotated
-
-from pydantic import BaseModel, ConfigDict, Field, FileUrl, UrlConstraints
-from pydantic_core import Url
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class MemesCreate(BaseModel):
     name: str = Field(min_length=1, max_length=200)
     description: str = Field(min_length=1, max_length=200)
-
 
 
 class MemesUpdate(BaseModel):

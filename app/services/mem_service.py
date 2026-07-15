@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.models.memes import Memes
+from app.models.memes import Meme
 from app.repositories.memes_repository import MemesRepository
 from app.schemas.mem import MemesCreate, MemesUpdate
 
@@ -11,8 +11,8 @@ class MemesService:
     def __init__(self, db: Session):
         self.repository = MemesRepository(db)
 
-    def create_memes(self, schema: MemesCreate, filename: str) -> Memes:
-        mem = Memes(
+    def create_memes(self, schema: MemesCreate) -> Meme:
+        mem = Meme(
             name=schema.name,
             description=schema.description,
             photo = schema.image,
@@ -20,10 +20,10 @@ class MemesService:
 
         return self.repository.create(mem)
 
-    def get_memes(self) -> list[Memes]:
+    def get_memes(self) -> list[Meme]:
         return self.repository.get_all()
 
-    def get_mem(self, memes_id: int) -> Memes:
+    def get_mem(self, memes_id: int) -> Meme:
         mem = self.repository.get_by_id(memes_id)
 
         if mem is None:
@@ -38,7 +38,7 @@ class MemesService:
             self,
             book_id: int,
             schema: MemesUpdate,
-    ) -> Memes:
+    ) -> Meme:
 
         mem = self.get_mem(book_id)
 

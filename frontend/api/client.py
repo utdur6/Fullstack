@@ -11,8 +11,8 @@ FAVORITES_ENDPOINT = f"{BACKEND_URL}/favorites/"
 
 
 # ---- ПУБЛИЧНЫЕ ЗАПРОСЫ ----
-def register(email: str, password: str, username: str):
-    data = {"email": email, "password": password, "username": username}
+def register(email: str, password: str):
+    data = {"email": email, "password": password}
     try:
         return requests.post(REGISTER_ENDPOINT, json=data)
     except requests.RequestException:

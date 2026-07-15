@@ -21,13 +21,13 @@ def get_mem_service(
     status_code=status.HTTP_201_CREATED,
 )
 def create_mem(
-    schema: MemesCreate, file: UploadFile = File(...),
+    schema: MemesCreate,
     service: MemesService = Depends(get_mem_service),
 ):
-    with open(f"media/{file.filename}", "wb") as file_write:
-        file_write.write(file.file.read())
+    # with open(f"media/{file.filename}", "wb") as file_write:
+    #     file_write.write(file.file.read())
 
-    return service.create_memes(schema, f"media/{file.filename}")
+    return service.create_memes(schema)
 
 @router.get(
     "/{mem_id}",
