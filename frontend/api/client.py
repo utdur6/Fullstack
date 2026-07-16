@@ -7,12 +7,12 @@ LOGIN_ENDPOINT = f"{BACKEND_URL}/auth/login/"
 REGISTER_ENDPOINT = f"{BACKEND_URL}/auth/register/"
 PROFILE_ENDPOINT = f"{BACKEND_URL}/users/me/"
 MEMES_ENDPOINT = f"{BACKEND_URL}/memes/"
+TAGS_ENDPOINT = f"{BACKEND_URL}/tags/"
 FAVORITES_ENDPOINT = f"{BACKEND_URL}/favorites/"
 
 
-# ---- ПУБЛИЧНЫЕ ЗАПРОСЫ ----
-def register(email: str, password: str):
-    data = {"email": email, "password": password}
+def register(email: str, password: str, username: str):
+    data = {"email": email, "password": password, "username": username}
     try:
         return requests.post(REGISTER_ENDPOINT, json=data)
     except requests.RequestException:
@@ -34,7 +34,22 @@ def get_all_memes():
         return None
 
 
-# ---- АВТОРИЗОВАННЫЕ ЗАПРОСЫ ----
+def get_all_tags():
+    """Получить все теги"""
+    try:
+        return requests.get(TAGS_ENDPOINT)
+    except requests.RequestException:
+        return None
+
+
+def get_memes_by_tag(tag_id: int):
+    """Получить мемы по тегу"""
+    try:
+        return requests.get(f"{MEMES_ENDPOINT}?tag_id={tag_id}")
+    except requests.RequestException:
+        return None
+
+
 def _request_with_auth(method: str, endpoint: str, params: dict = None, payload: dict = None):
     token = session_state.get("access_token")
     if not token:
@@ -66,7 +81,6 @@ def get_profile():
 
 
 def vote_for_meme(meme_id: int):
-    """Проголосовать за мем"""
     return _request_with_auth("POST", f"{MEMES_ENDPOINT}{meme_id}/vote/")
 
 
@@ -74,7 +88,6 @@ def create_meme(payload: dict):
     return _request_with_auth("POST", MEMES_ENDPOINT, payload=payload)
 
 
-# ---- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ ----
 def get_error_message(response):
     if response is None:
         return "Не удалось подключиться к серверу."

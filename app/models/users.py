@@ -2,6 +2,7 @@ from enum import Enum
 from sqlalchemy import Boolean, String, Column, Integer
 from sqlalchemy.orm import relationship
 from app.database import Base
+from app.models.user_memes_table import user_memes_table
 
 
 class UserRole(str, Enum):
@@ -21,10 +22,7 @@ class User(Base):
     profile = relationship("Profile", backref="user", uselist=False)
 
     favorite_memes = relationship(
-        "Meme",
-        secondary="user_memes",
-        backref="favorited_by",
-        lazy="selectin"
+        "Favourite",
+        secondary=user_memes_table,
     )
-
-    created_memes = relationship("Meme", backref="author")
+    created_memes = relationship("Meme", back_populates="author")
