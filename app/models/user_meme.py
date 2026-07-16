@@ -1,16 +1,28 @@
-from sqlalchemy import Column, Integer, ForeignKey, DateTime, UniqueConstraint
+from sqlalchemy import Column, Integer, ForeignKey, DateTime
 from sqlalchemy.sql import func
+from sqlalchemy.orm import relationship
 from app.database import Base
 
 
-class Favourite(Base):
+class UserMeme(Base):
     __tablename__ = "user_memes"
 
-    __table_args__ = (
-        UniqueConstraint("user_id", "memes_id"),
+    id = Column(Integer, primary_key=True, autoincrement=True)  # ← ДОБАВИТЬ ID
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    meme_id = Column(
+        Integer,
+        ForeignKey("memes.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    created_at = Column(
+        DateTime,
+        server_default=func.now(),
+        nullable=False,
     )
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    meme_id = Column(Integer, ForeignKey("memes.id", ondelete="CASCADE"), nullable=False)
-    created_at = Column(DateTime, server_default=func.now())
+    user = relationship("User", back_populates="favorite_links")
+    meme = relationship("Meme", back_populates="favorite_links")

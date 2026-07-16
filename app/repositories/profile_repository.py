@@ -1,6 +1,7 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from app.models.profile import Profile
 from typing import List, Optional
+
 
 class ProfileRepository:
     def __init__(self, db: Session):
@@ -18,6 +19,7 @@ class ProfileRepository:
         self.db.refresh(profile)
         return profile
 
+    # ===== БАЗОВЫЕ МЕТОДЫ =====
     def get_all(self) -> List[Profile]:
         return self.db.query(Profile).all()
 
@@ -30,3 +32,30 @@ class ProfileRepository:
     def delete(self, profile: Profile) -> None:
         self.db.delete(profile)
         self.db.commit()
+
+    # ===== МЕТОДЫ С ЗАГРУЗКОЙ СВЯЗЕЙ =====
+    def get_with_user(self, profile_id: int) -> Optional[Profile]:
+        """Получить профиль с пользователем (JOIN)"""
+        return (
+            self.db.query(Profile)
+            .options(joinedload(Profile.user))  # ← joinedload для 1:1
+            .filter(Profile.id == profile_id)
+            .first()
+        )
+
+    def get_by_user_id_with_user(self, user_id: int) -> Optional[Profile]:
+        """Получить профиль по user_id с пользователем"""
+        return (
+            self.db.query(Profile)
+            .options(joinedload(Profile.user))
+            .filter(Profile.user_id == user_id)
+            .first()
+        )
+
+    def get_all_with_users(self) -> List[Profile]:
+        """Получить все профили с пользователями"""
+        return (
+            self.db.query(Profile)
+            .options(joinedload(Profile.user))
+            .all()
+        )

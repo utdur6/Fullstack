@@ -1,5 +1,4 @@
-from sqlalchemy.orm import Session
-
+from sqlalchemy.orm import Session, selectinload
 from app.models.tags import Tag
 
 
@@ -31,3 +30,29 @@ class TagRepository:
     def delete(self, tag: Tag) -> None:
         self.db.delete(tag)
         self.db.commit()
+
+    def get_with_memes(self, tag_id: int) -> Tag | None:
+        """Получить тег со списком мемов (selectinload для 1:N)"""
+        return (
+            self.db.query(Tag)
+            .options(selectinload(Tag.memes))  # ← selectinload для коллекции
+            .filter(Tag.id == tag_id)
+            .first()
+        )
+
+    def get_by_name_with_memes(self, name: str) -> Tag | None:
+        """Получить тег по имени со списком мемов"""
+        return (
+            self.db.query(Tag)
+            .options(selectinload(Tag.memes))
+            .filter(Tag.name == name)
+            .first()
+        )
+
+    def get_all_with_memes(self) -> list[Tag]:
+        """Получить все теги с мемами"""
+        return (
+            self.db.query(Tag)
+            .options(selectinload(Tag.memes))
+            .all()
+        )

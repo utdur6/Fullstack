@@ -2,7 +2,7 @@ from sqlalchemy import String, Column, Integer, ForeignKey, DateTime
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 from app.database import Base
-from app.models.user_memes_table import user_memes_table
+from app.models.user_memes_table import user_memes_table  # ← ИМПОРТ
 
 
 class Meme(Base):
@@ -10,19 +10,42 @@ class Meme(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String, unique=True, nullable=False)
-    description = Column(String, unique=True, nullable=False)
+    description = Column(String, nullable=False)
     photo = Column(String, nullable=True)
-    tag_id = Column(Integer, ForeignKey("tags.id"), nullable=True)
-    author_id = Column(Integer, ForeignKey("users.id"), nullable=True)
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, onupdate=func.now(), nullable=True)
 
-    tag = relationship("Tag", back_populates="memes")
-    author = relationship("User", back_populates="created_memes")
+    tag_id = Column(
+        Integer,
+        ForeignKey("tags.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    author_id = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(
+        DateTime,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+
+    tag = relationship(
+        "Tag",
+        back_populates="memes",
+    )
+
+    author = relationship(
+        "User",
+        back_populates="created_memes",
+    )
 
     favorited_by = relationship(
         "User",
         secondary=user_memes_table,
         back_populates="favorite_memes",
-        lazy="selectin"
+        lazy="selectin",
     )
