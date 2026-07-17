@@ -1,5 +1,5 @@
 ﻿import streamlit as st
-from api.client import register
+from frontend.api.client import register
 
 def show():
     st.set_page_config(page_title="Регистрация", page_icon="📝", layout="centered")

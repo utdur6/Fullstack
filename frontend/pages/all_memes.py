@@ -1,5 +1,5 @@
 ﻿import streamlit as st
-from api.client import get_all_memes
+from frontend.api.client import get_all_memes
 
 
 def show():

@@ -15,6 +15,8 @@ from app.models.tags import Tag
 from app.models.memes import Meme
 from app.models.user_memes_table import user_memes_table
 
+
+
 settings = get_settings()
 
 app = FastAPI(

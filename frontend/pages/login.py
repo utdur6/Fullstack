@@ -1,6 +1,6 @@
 ﻿import streamlit as st
-from api.client import login as api_login, get_profile
-from auth.state import save_auth, is_authenticated
+from frontend.api.client import login as api_login, get_profile
+from frontend.auth.state import save_auth, is_authenticated
 
 
 def show():

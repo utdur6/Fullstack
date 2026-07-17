@@ -1,5 +1,5 @@
 ﻿import streamlit as st
-from api.client import get_all_tags, get_memes_by_tag, get_all_memes
+from frontend.api.client import get_all_tags, get_memes_by_tag, get_all_memes
 
 
 def show():
@@ -16,7 +16,8 @@ def show():
             cols = st.columns(4)
             for i, tag in enumerate(tags):
                 with cols[i % 4]:
-                    if st.button(f"{tag['emoji']} {tag['name']}", key=f"tag_{tag['id']}", use_container_width=True):
+                    if st.button(f"{tag.get('emoji', '')} {tag['name']}", key=f"tag_{tag['id']}",
+                                 use_container_width=True):
                         st.session_state.selected_tag = tag['id']
                         st.session_state.selected_tag_name = tag['name']
                         st.rerun()
@@ -42,7 +43,7 @@ def show():
                                         st.image(meme.get('image_url', 'https://via.placeholder.com/150'),
                                                  use_container_width=True)
                                     with col2:
-                                        st.subheader(meme.get('title', 'Мем'))
+                                        st.subheader(meme.get('name', 'Мем'))
                                         st.caption(meme.get('description', ''))
                                         st.write(f"❤️ {meme.get('votes', 0)} голосов")
                                 st.divider()

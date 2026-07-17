@@ -1,5 +1,5 @@
 import streamlit as st
-from auth.state import require_login
+from frontend.auth.state import require_login
 
 def show():
     require_login()

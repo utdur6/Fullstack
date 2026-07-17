@@ -1,7 +1,7 @@
 import streamlit as st
 import requests
-from api.client import create_meme, get_error_message, get_all_tags
-from auth.state import require_login, is_admin
+from frontend.api.client import create_meme, get_error_message, get_all_tags
+from frontend.auth.state import require_login, is_admin
 
 
 def show():
